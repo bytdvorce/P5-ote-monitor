@@ -9,56 +9,117 @@
     <style>
         body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
         .container { max-width: 1000px; margin: auto; }
-        canvas { background: #1e1e1e; border-radius: 8px; padding: 10px; }
+        canvas { background: #1e1e1e; border-radius: 8px; padding: 10px; margin-bottom: 30px; }
         h1 { text-align: center; color: #00e676; }
         .stats { display: flex; justify-content: space-around; margin-bottom: 20px; }
-        .card { background: #252525; padding: 15px; border-radius: 8px; text-align: center; width: 30%; }
+        .card { background: #252525; padding: 15px; border-radius: 8px; text-align: center; width: 30%; border: 1px solid #333; }
+        .card h3 { margin: 0; color: #aaa; font-size: 0.9em; }
+        .card p { font-size: 1.5em; font-weight: bold; margin: 10px 0 0 0; }
+        
+        /* Styl tabulky */
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #333; }
+        th { background: #252525; color: #00e676; }
+        tr:hover { background: #2a2a2a; }
+        .current-row { background: rgba(0, 230, 118, 0.1); font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Ceny Elektřiny (EUR/MWh)</h1>
-        <div class="stats" id="stats">
-            <div class="card"><h3>Aktuální</h3><p id="curr">-</p></div>
+        
+        <div class="stats">
+            <div class="card"><h3>Aktuální (Konečná)</h3><p id="curr">-</p></div>
             <div class="card"><h3>Baterie</h3><p id="bat">-</p></div>
-            <div class="card"><h3>Výkup</h3><p id="sell">-</p></div>
+            <div class="card"><h3>Výkup (Sell)</h3><p id="sell">-</p></div>
         </div>
+
         <canvas id="priceChart"></canvas>
+
+        <h2>Detailní rozpis (aktuální a budoucí)</h2>
+        <table id="priceTable">
+            <thead>
+                <tr>
+                    <th>Čas</th>
+                    <th>Aktuální</th>
+                    <th>Baterie</th>
+                    <th>Výkup</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
     </div>
 
     <script>
-        const csvUrl = 'ceny_final_5min.csv';
+        const csvUrl = './ceny_final_5min.csv';
 
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             delimiter: ";",
             complete: function(results) {
-                const data = results.data.filter(r => r.Datum);
-                const labels = data.map(r => `${r.Datum} ${r.Cas}`);
-                const spot = data.map(r => parseFloat(r.Cena_Spot.replace(',', '.')));
-                const konecna = data.map(r => parseFloat(r.Cena_Konecna.replace(',', '.')));
-                const bat = data.map(r => parseFloat(r.Cena_Bat.replace(',', '.')));
-                const sell = data.map(r => parseFloat(r.Sell.replace(',', '.')));
+                const now = new Date();
+                
+                // Filtrace: Pouze řádky, kde čas (Datum + Cas) je nyní nebo v budoucnu
+                const allData = results.data.filter(r => r.Datum && r.Cas);
+                const filteredData = allData.filter(r => {
+                    const rowTime = new Date(`${r.Datum}T${r.Cas}`);
+                    // Posuneme "teď" o 5 minut zpět, abychom viděli i aktuální probíhající interval
+                    return rowTime >= new Date(now.getTime() - 5 * 60000);
+                });
 
-                // Aktualizace karet s poslední hodnotou
-                document.getElementById('curr').innerText = konecna[0] + " €";
-                document.getElementById('bat').innerText = bat[0] + " €";
-                document.getElementById('sell').innerText = sell[0] + " €";
+                if (filteredData.length === 0) return;
 
+                const labels = filteredData.map(r => r.Cas);
+                const konecna = filteredData.map(r => parseFloat(r.Cena_Konecna.replace(',', '.')));
+                const bat = filteredData.map(r => parseFloat(r.Cena_Bat.replace(',', '.')));
+                const sell = filteredData.map(r => parseFloat(r.Sell.replace(',', '.')));
+
+                // Aktualizace horních karet (první řádek ve filtrovaných datech)
+                document.getElementById('curr').innerText = konecna[0].toFixed(2) + " €";
+                document.getElementById('bat').innerText = bat[0].toFixed(2) + " €";
+                document.getElementById('sell').innerText = sell[0].toFixed(2) + " €";
+
+                // Vykreslení tabulky
+                const tableBody = document.getElementById('tableBody');
+                filteredData.forEach((r, index) => {
+                    const row = document.createElement('tr');
+                    if (index === 0) row.className = 'current-row';
+                    row.innerHTML = `
+                        <td>${r.Cas}</td>
+                        <td>${parseFloat(r.Cena_Konecna.replace(',','.')).toFixed(2)} €</td>
+                        <td>${parseFloat(r.Cena_Bat.replace(',','.')).toFixed(2)} €</td>
+                        <td>${parseFloat(r.Sell.replace(',','.')).toFixed(2)} €</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Graf
                 new Chart(document.getElementById('priceChart'), {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Cena Konečná', data: konecna, borderColor: '#00e676', fill: false, borderWidth: 2 },
-                            { label: 'Cena Baterie', data: bat, borderColor: '#ff9800', borderDash: [5, 5], fill: false },
-                            { label: 'Výkup (Sell)', data: sell, borderColor: '#2196f3', fill: true, backgroundColor: 'rgba(33, 150, 243, 0.1)' }
+                            { label: 'Cena Konečná', data: konecna, borderColor: '#00e676', backgroundColor: '#00e676', fill: false, borderWidth: 3, pointRadius: 0 },
+                            { label: 'Cena Baterie', data: bat, borderColor: '#ff9800', borderDash: [5, 5], fill: false, pointRadius: 0 },
+                            { label: 'Výkup (Sell)', data: sell, borderColor: '#2196f3', backgroundColor: 'rgba(33, 150, 243, 0.1)', fill: true, pointRadius: 0 }
                         ]
                     },
                     options: {
                         responsive: true,
-                        scales: { x: { display: false }, y: { grid: { color: '#333' } } },
+                        interaction: { intersect: false, mode: 'index' },
+                        scales: { 
+                            x: { 
+                                title: { display: true, text: 'Čas (5min intervaly)', color: '#aaa' },
+                                ticks: { color: '#888', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+                            }, 
+                            y: { 
+                                title: { display: true, text: 'Cena [EUR/MWh]', color: '#aaa' },
+                                grid: { color: '#333' },
+                                ticks: { color: '#888' }
+                            } 
+                        },
                         plugins: { legend: { labels: { color: 'white' } } }
                     }
                 });
