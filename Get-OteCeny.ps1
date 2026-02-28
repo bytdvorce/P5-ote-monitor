@@ -39,10 +39,13 @@ try {
 } catch { Write-Host "Chyba ČNB: $($_.Exception.Message)" }
 
 # --- 2. NAČTENÍ KONSTANT A VÝPOČET ---
-$rawHdo = Get-Content -Path $hdoFile -Encoding UTF8
 function Get-HdoValue($lineIndex) {
     $parts = $rawHdo[$lineIndex] -split ';'
-    return if ($parts.Count -gt 1) { [double]($parts[1] -replace ',', '.') } else { 0 }
+    if ($parts.Count -gt 1) { 
+        return [double]($parts[1] -replace ',', '.') 
+    } else { 
+        return 0 
+    }
 }
 
 $T1 = Get-HdoValue 10
@@ -118,4 +121,5 @@ if ($env:GITHUB_ACTIONS) {
     git add hdo500.csv ceny_final_5min.csv
     git commit -m "Auto-update: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
     git push
+
 }
