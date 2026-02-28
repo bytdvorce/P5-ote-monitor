@@ -1,26 +1,20 @@
-name: Aktualizace cen elektřiny
+name: OTE_Update
 
 on:
   schedule:
-    # Spouští se každou hodinu (v 5. minutě)
-    - cron: '5 * * * *'
-  workflow_dispatch: # Umožňuje spustit skript i ručně tlačítkem
+    - cron: '15 * * * *' # Každou hodinu v 15. minutě
+  workflow_dispatch:      # Umožní spustit ručně tlačítkem
 
 jobs:
-  build:
-    runs-on: windows-latest # Použijeme Windows, aby PowerShell fungoval nativně
+  run_script:
+    runs-on: windows-latest
+    permissions:
+      contents: write    # Důležité: umožní GitHubu zapisovat změny do CSV
     steps:
-      - name: Checkout repozitáře
-        uses: actions/checkout@v4
-
-      - name: Instalace modulu ImportExcel
+      - uses: actions/checkout@v4
+      - name: Install ImportExcel
         shell: powershell
-        run: |
-          Install-Module ImportExcel -Force -Scope CurrentUser
-
-      - name: Spuštění skriptu
+        run: Install-Module ImportExcel -Force -Scope CurrentUser
+      - name: Run Script
         shell: powershell
-        run: |
-          ./Get-OteCeny.ps1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./Get-OteCeny.ps1
