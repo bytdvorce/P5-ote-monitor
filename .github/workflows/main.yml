@@ -1,0 +1,26 @@
+name: Aktualizace cen elektřiny
+
+on:
+  schedule:
+    # Spouští se každou hodinu (v 5. minutě)
+    - cron: '5 * * * *'
+  workflow_dispatch: # Umožňuje spustit skript i ručně tlačítkem
+
+jobs:
+  build:
+    runs-on: windows-latest # Použijeme Windows, aby PowerShell fungoval nativně
+    steps:
+      - name: Checkout repozitáře
+        uses: actions/checkout@v4
+
+      - name: Instalace modulu ImportExcel
+        shell: powershell
+        run: |
+          Install-Module ImportExcel -Force -Scope CurrentUser
+
+      - name: Spuštění skriptu
+        shell: powershell
+        run: |
+          ./Get-OteCeny.ps1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
