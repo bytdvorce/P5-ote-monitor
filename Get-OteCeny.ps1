@@ -38,6 +38,7 @@ try {
 
     $hdoLinesAll | Set-Content -Path $hdoFile -Encoding UTF8
     Write-Host "Kurz EUR aktualizován: $eurRateStr"
+    $rawHdo = Get-Content -Path $hdoFile -Encoding UTF8
 } catch { Write-Host "Chyba ČNB: $($_.Exception.Message)" }
 
 # --- 2. NAČTENÍ KONSTANT A VÝPOČET ---
@@ -132,4 +133,5 @@ if ($env:GITHUB_ACTIONS) {
     git push
 
 }
+
 
