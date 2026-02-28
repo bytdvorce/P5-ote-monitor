@@ -1,15 +1,17 @@
 # Nastavení kódování
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Detekce složky, kde skript běží
-$PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-if ([string]::IsNullOrEmpty($PSScriptRoot)) { $PSScriptRoot = "." }
-
+# Cesta k souboru (univerzální pro GitHub i PC)
 $hdoFile = Join-Path $PSScriptRoot "hdo500.csv"
 $outputFile = Join-Path $PSScriptRoot "ceny_final_5min.csv"
 
 Write-Host "--- SPUŠTĚNÍ AUTOMATIZACE (GitHub Actions) ---"
 
+# Kontrola, zda soubor existuje, než začneme
+if (-not (Test-Path $hdoFile)) {
+    Write-Error "Soubor $hdoFile nebyl nalezen v repozitáři!"
+    exit 1
+}
 # --- 1. AKTUALIZACE EUR A PŘEPOČET ---
 try {
     $cnbUrl = "https://www.cnb.cz/cs/financni_trhy/devizovy_trh/kurzy_devizoveho_trhu/denni_kurz.txt"
@@ -40,12 +42,19 @@ try {
 
 # --- 2. NAČTENÍ KONSTANT A VÝPOČET ---
 function Get-HdoValue($lineIndex) {
+    # Znovu se ujistíme, že máme data v $rawHdo
+    if ($null -eq $rawHdo -or $rawHdo.Count -le $lineIndex) {
+        Write-Host "Varování: Řádek $lineIndex v souboru chybí nebo je soubor prázdný." -ForegroundColor Yellow
+        return 0
+    }
+    
     $parts = $rawHdo[$lineIndex] -split ';'
     if ($parts.Count -gt 1) { 
-        return [double]($parts[1] -replace ',', '.') 
-    } else { 
-        return 0 
+        # Vyčištění od případných uvozovek a převod na číslo
+        $val = $parts[1].Trim().Replace('"', '') -replace ',', '.'
+        return [double]$val
     }
+    return 0
 }
 
 $T1 = Get-HdoValue 10
@@ -123,3 +132,4 @@ if ($env:GITHUB_ACTIONS) {
     git push
 
 }
+
