@@ -4,8 +4,13 @@ on:
   schedule:
     - cron: '15 * * * *' # Každou hodinu v 15. minutě
     # Extra aktualizace pro zachycení nových cen na další den:
-    - cron: '30 13 * * *' # 13:30 UTC
-    - cron: '30 12 * * *' # 14:30 UTC
+    - cron: '30 11 * * *' 
+    - cron: '30 12 * * *' 
+    - cron: '30 13 * * *' 
+    - cron: '30 14 * * *' 
+    - cron: '30 15 * * *' 
+    - cron: '30 16 * * *' 
+    - cron: '30 17 * * *' 
   workflow_dispatch:      # Umožní spustit ručně tlačítkem
 
 jobs:
