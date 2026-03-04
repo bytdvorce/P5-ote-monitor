@@ -110,8 +110,8 @@ foreach ($date in $dates) {
                     Cas = "{0:hh\:mm}" -f $currTime
                     Cena_Spot = $cenaSpot
                     Tarif = if ($isLow) { "NT" } else { "VT" }
-                    Cena_Konecna = "{0:N2}" -f $cenaKonecna
-                    Cena_Bat = "{0:N2}" -f ($baterie + ($cenaKonecna / $divisor))
+                    Cena_Konecna = "{0:N2}" -f ($cenaKonecna * 1.21)
+                    Cena_Bat = "{0:N2}" -f ($baterie + (($cenaKonecna * 1.21) / $divisor))
                     Sell = "{0:N2}" -f ($cenaSpot - $srazka)
                 }
             }
@@ -133,5 +133,6 @@ if ($env:GITHUB_ACTIONS) {
     git push
 
 }
+
 
 
