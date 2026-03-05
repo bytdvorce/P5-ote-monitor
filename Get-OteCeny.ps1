@@ -34,6 +34,7 @@ try {
     $hdoLinesAll[12] = Get-ConvertedValue 23 "baterie" $eurRateNum
     $hdoLinesAll[14] = Get-ConvertedValue 24 "priplatek" $eurRateNum
     $hdoLinesAll[15] = Get-ConvertedValue 25 "srazka" $eurRateNum
+    $hdoLinesAll[16] = Get-ConvertedValue 18 "fixEUR" $eurRateNum
     $hdoLinesAll[17] = "EUR;$eurRateStr"
 
     $hdoLinesAll | Set-Content -Path $hdoFile -Encoding UTF8
@@ -64,8 +65,8 @@ $baterie = Get-HdoValue 12
 $batProc = Get-HdoValue 13
 $Priplatek = Get-HdoValue 14
 $srazka = Get-HdoValue 15
-$fix = Get-HdoValue 19
-$plyn = Get-HdoValue 20
+$fixEUR = Get-HdoValue 16
+$plyn = Get-HdoValue 19
 
 $hdoMap = @{}
 foreach ($line in $rawHdo[1..7]) {
@@ -105,7 +106,7 @@ foreach ($date in $dates) {
                 }
                 
                 $cenaKonecna = if ($isLow) { $cenaSpot + $T2 + $Priplatek } else { $cenaSpot + $T1 + $Priplatek }
-                $cenaFix = if ($isLow) { $fix + $T2 } else { $fix + $T1 }
+                $cenaFix = if ($isLow) { $fixEUR + $T2 } else { $fixEUR + $T1 }
                 $divisor = if ($batProc -gt 0) { $batProc } else { 1 }
                 
                 $finalRows += [PSCustomObject]@{
@@ -138,6 +139,7 @@ if ($env:GITHUB_ACTIONS) {
     git push
 
 }
+
 
 
 
