@@ -13,6 +13,10 @@ on:
     - cron: '30 17 * * *' 
   workflow_dispatch:      # Umožní spustit ručně tlačítkem
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true  
+
 jobs:
   run_script:
     runs-on: windows-latest
