@@ -64,6 +64,8 @@ $baterie = Get-HdoValue 12
 $batProc = Get-HdoValue 13
 $Priplatek = Get-HdoValue 14
 $srazka = Get-HdoValue 15
+$fix = Get-HdoValue 19
+$plyn = Get-HdoValue 20
 
 $hdoMap = @{}
 foreach ($line in $rawHdo[1..7]) {
@@ -103,6 +105,7 @@ foreach ($date in $dates) {
                 }
                 
                 $cenaKonecna = if ($isLow) { $cenaSpot + $T2 + $Priplatek } else { $cenaSpot + $T1 + $Priplatek }
+                $cenaFix = if ($isLow) { $fix + $T2 } else { $fix + $T1 }
                 $divisor = if ($batProc -gt 0) { $batProc } else { 1 }
                 
                 $finalRows += [PSCustomObject]@{
@@ -113,6 +116,8 @@ foreach ($date in $dates) {
                     Cena_Konecna = "{0:N2}" -f ($cenaKonecna * 1.21)
                     Cena_Bat = "{0:N2}" -f ($baterie + (($cenaKonecna * 1.21) / $divisor))
                     Sell = "{0:N2}" -f ($cenaSpot - $srazka)
+                    Fix = "{0:N2}" -f ($cenaFix * 1.21)
+                    Plyn = "{0:N2}" -f $plyn
                 }
             }
         }
@@ -133,6 +138,7 @@ if ($env:GITHUB_ACTIONS) {
     git push
 
 }
+
 
 
 
