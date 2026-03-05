@@ -81,72 +81,68 @@
         const csvUrl = './ceny_final_5min.csv';
         let priceChart; // Proměnná pro instanci grafu, abychom ho mohli aktualizovat
 
-        function updateDashboard() {
-            Papa.parse(csvUrl, {
+function updateDashboard() {
+            Papa.parse("ceny_final_5min.csv", {
                 download: true,
                 header: true,
                 delimiter: ";",
-                skipEmptyLines: true,
                 complete: function(results) {
-                    const now = new Date();
-                    const allData = results.data.filter(r => r.Datum && r.Cas);
-                    
-                    const filteredData = allData.filter(r => {
-                        const rowTime = new Date(`${r.Datum}T${r.Cas}`);
-                        return rowTime >= new Date(now.getTime() - 5 * 60000);
-                    });
+                    const data = results.data;
+                    const labels = data.map(row => row.Cas);
+                    const konecna = data.map(row => parseFloat(row.Cena_Konecna));
+                    const sell = data.map(row => parseFloat(row.Sell));
+                    const fix = data.map(row => parseFloat(row.Fix));
+                    const plyn = data.map(row => parseFloat(row.Plyn));
 
-                    if (filteredData.length === 0) return;
+                    // Aktualizace textových karet (příklad pro poslední hodnotu)
+                    const lastRow = data[data.length - 1];
+                    document.getElementById('price-value').innerText = lastRow.Cena_Konecna + " €";
 
-                    const labels = filteredData.map(r => r.Cas);
-                    const konecna = filteredData.map(r => parseFloat(r.Cena_Konecna.replace(',', '.')));
-                    const bat = filteredData.map(r => parseFloat(r.Cena_Bat.replace(',', '.')));
-                    const sell = filteredData.map(r => parseFloat(r.Sell.replace(',', '.')));
+                    if (chart) chart.destroy();
 
-                    // Čas platnosti v záhlaví (aktuální čas z prvního řádku dat)
-                    const startTime = filteredData[0].Cas;
-                    // Vypočítáme konec intervalu (+5 min)
-                    const endParts = startTime.split(':');
-                    const endDate = new Date();
-                    endDate.setHours(parseInt(endParts[0]), parseInt(endParts[1]) + 5);
-                    const endTime = endDate.getHours().toString().padStart(2, '0') + ":" + endDate.getMinutes().toString().padStart(2, '0');
-                    
-                    document.getElementById('time-validity').innerText = `Platnost: ${startTime} – ${endTime}`;
-
-                    // Horní karty
-                    document.getElementById('curr').innerText = konecna[0].toFixed(2) + " €";
-                    document.getElementById('bat').innerText = bat[0].toFixed(2) + " €";
-                    document.getElementById('sell').innerText = sell[0].toFixed(2) + " €";
-
-                    // Tabulka
-                    const tableBody = document.getElementById('tableBody');
-                    tableBody.innerHTML = ''; // Vyčištění tabulky před novým vykreslením
-                    filteredData.forEach((r, index) => {
-                        const row = document.createElement('tr');
-                        if (index === 0) row.className = 'current-row';
-                        
-                        row.innerHTML = `
-                            <td>${r.Cas}</td>
-                            <td>${konecna[index].toFixed(2)} €</td>
-                            <td>${bat[index].toFixed(2)} €</td>
-                            <td>${sell[index].toFixed(2)} €</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-
-                    // Graf (pokud existuje, zničíme ho, aby se mohl vytvořit nový s novými daty)
-                    if (priceChart) {
-                        priceChart.destroy();
-                    }
-
-                    priceChart = new Chart(document.getElementById('priceChart'), {
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    chart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: labels,
                             datasets: [
-                                { label: 'Konečná', data: konecna, borderColor: '#00e676', backgroundColor: '#00e676', borderWidth: 3, pointRadius: 0, tension: 0.1 },
-                                { label: 'Baterie', data: bat, borderColor: '#ff9800', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, tension: 0.1 },
-                                { label: 'Výkup', data: sell, borderColor: '#2196f3', backgroundColor: 'rgba(33, 150, 243, 0.1)', fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.1 }
+                                { 
+                                    label: 'Konečná', 
+                                    data: konecna, 
+                                    borderColor: '#00e676', 
+                                    backgroundColor: 'rgba(0, 230, 118, 0.1)', 
+                                    fill: true, 
+                                    borderWidth: 2, 
+                                    pointRadius: 0, 
+                                    tension: 0.1 
+                                },
+                                { 
+                                    label: 'Výkup', 
+                                    data: sell, 
+                                    borderColor: '#2196f3', 
+                                    fill: false, 
+                                    borderWidth: 2, 
+                                    pointRadius: 0, 
+                                    tension: 0.1 
+                                },
+                                { 
+                                    label: 'Fix', 
+                                    data: fix, 
+                                    borderColor: '#ff9800', 
+                                    fill: false, 
+                                    borderWidth: 1, 
+                                    pointRadius: 0, 
+                                    tension: 0.1 
+                                },
+                                { 
+                                    label: 'Plyn', 
+                                    data: plyn, 
+                                    borderColor: '#f44336', 
+                                    fill: false, 
+                                    borderWidth: 1, 
+                                    pointRadius: 0, 
+                                    tension: 0.1 
+                                }
                             ]
                         },
                         options: {
@@ -164,14 +160,17 @@
                                 } 
                             },
                             plugins: { 
-                                legend: { position: 'top', labels: { color: 'white', boxWidth: 12 } } 
+                                legend: { 
+                                    position: 'top', 
+                                    labels: { color: 'white', boxWidth: 12, padding: 15 } 
+                                } 
                             }
                         }
                     });
                 }
             });
         }
-
+        
         // První spuštění
         updateDashboard();
 
@@ -180,3 +179,4 @@
     </script>
 </body>
 </html>
+
