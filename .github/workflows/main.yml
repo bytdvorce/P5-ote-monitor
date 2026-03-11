@@ -2,7 +2,7 @@ name: OTE_Update
 
 on:
   schedule:
-    - cron: '15 * * * *' # Každou hodinu v 15. minutě
+#    - cron: '15 * * * *' # Každou hodinu v 15. minutě
     # Extra aktualizace pro zachycení nových cen na další den:
     - cron: '30 11 * * *' 
     - cron: '30 12 * * *' 
